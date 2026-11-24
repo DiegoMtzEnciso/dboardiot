@@ -10,7 +10,7 @@ export default function FotoPerfil({ perfil }) {
   const src = actual?.src ?? perfil.foto_url
   const multi = lista.length > 1
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface2 md:aspect-[4/5]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface2 sm:aspect-auto sm:h-full sm:min-h-[16rem]">
       {src ? (
         <button type="button" disabled={!multi} onClick={() => setIdx((i) => (i + 1) % lista.length)}
           aria-label={multi ? 'Cambiar foto' : undefined} className={`block h-full w-full ${multi ? 'cursor-pointer' : 'cursor-default'}`}>

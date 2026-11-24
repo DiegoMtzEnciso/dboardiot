@@ -25,7 +25,7 @@ export default function Plan({ s }) {
   return (
     <Card title="Plan nutricional" icon={UtensilsCrossed}>
       {L ? <Sk className="h-40" /> : (
-        <div className="flex flex-1 flex-col justify-between gap-5">
+        <div className="flex flex-1 flex-col justify-between gap-7">
           <div>
             <p className="text-4xl font-bold leading-none tracking-tight tabular-nums text-fg">
               {n.total_diario}<span className="ml-1.5 text-sm font-medium tracking-normal text-muted">g/día</span>
@@ -37,7 +37,7 @@ export default function Plan({ s }) {
           </div>
 
           <div>
-            <div className="relative h-[3.75rem]" aria-label="Horarios de las tomas">
+            <div className="relative h-[4.25rem]" aria-label="Horarios de las tomas">
               <div className="absolute inset-x-0 top-[9px] h-px bg-hairline-strong" />
               <div className="absolute left-0 top-[8px] h-0.5 rounded-full bg-accent transition-all duration-500" style={{ width: `${posOf(now)}%` }} />
               {horarios.map((h, i) => {
@@ -54,7 +54,7 @@ export default function Plan({ s }) {
                 )
               })}
             </div>
-            <p className="mt-3 text-xs text-muted">{proxima}</p>
+            <p className="mt-4 text-xs text-muted">{proxima}</p>
           </div>
         </div>
       )}

@@ -391,7 +391,12 @@ export function usePetStation() {
     setDemoState(on)
     if (on) {
       setTelDemo(TEL0)
-      setHistDemo([])
+      // Historial inicial para que la gráfica se vea viva desde el primer instante
+      const semilla = [38, 34, 29, 23, 18, 12, 9, 45, 40, 35, 29, 24]
+      setHistDemo(semilla.map((peso, i) => {
+        const d = new Date(Date.now() - (semilla.length - i) * 90000)
+        return { hora: d.toTimeString().slice(0, 5), peso, tolva: 0, agua: 0 }
+      }))
       setFeedDemo([{ hora: hhmm(), mensaje: '(Demo) Vista previa activada: datos simulados, no se envían comandos.' }])
     }
   }, [])
@@ -410,7 +415,7 @@ export function usePetStation() {
       if (tick % 8 === 0) {
         peso = 45
         setFeedDemo((f) => [{ hora: hhmm(), mensaje: '(Demo) Ración IA dispensada: 45 g' }, ...f].slice(0, 40))
-      } else peso = Math.max(0, peso - 4 + (Math.random() * 3 - 1))
+      } else peso = Math.max(6, peso - 4 + (Math.random() * 3 - 1))
       const plato = niveles[Math.floor(tick / 4) % 4]
       const t = {
         peso: Math.round(peso),

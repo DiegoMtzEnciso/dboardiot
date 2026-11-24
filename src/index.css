@@ -23,6 +23,8 @@
   --glass-inner: rgba(255, 255, 255, 0.05);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 12px 40px -16px rgba(0, 0, 0, 0.55);
   --glass-sheen: rgba(255, 255, 255, 0.09);
+  --pop-bg: rgba(16, 22, 36, 0.72);
+  --pop-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 18px 48px -12px rgba(0, 0, 0, 0.65);
   --blob-1: rgba(6, 182, 212, 0.20);
   --blob-2: rgba(99, 102, 241, 0.18);
   --blob-3: rgba(16, 185, 129, 0.10);
@@ -50,6 +52,8 @@
   --glass-inner: rgba(15, 23, 42, 0.045);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 40px -18px rgba(15, 23, 42, 0.22);
   --glass-sheen: rgba(255, 255, 255, 0.55);
+  --pop-bg: rgba(255, 255, 255, 0.82);
+  --pop-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 18px 48px -14px rgba(15, 23, 42, 0.30);
   --blob-1: rgba(56, 189, 248, 0.34);
   --blob-2: rgba(129, 140, 248, 0.24);
   --blob-3: rgba(52, 211, 153, 0.20);
@@ -120,6 +124,16 @@ html.theme-anim *::after {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass { background: rgb(var(--surface)); }
 }
+
+/* Lista desplegable del selector: cristal más denso para que el texto se lea sobre cualquier fondo */
+.glass-pop {
+  background: var(--pop-bg);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: var(--pop-shadow);
+}
+@keyframes popIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+.pop-in { animation: popIn 140ms ease-out both; transform-origin: top center; }
 
 /* ───────── Animaciones ───────── */
 @keyframes wave { from { transform: translateX(0); } to { transform: translateX(-50%); } }

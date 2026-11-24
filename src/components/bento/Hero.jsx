@@ -8,13 +8,13 @@ export default function Hero({ s }) {
   const { perfil, nutricionIA: n, cambiarPerfil } = s
   return (
     <Card title="Mascota" icon={PawPrint}>
-      <div className="grid flex-1 gap-5 sm:grid-cols-[minmax(0,13rem)_1fr]">
+      <div className="grid flex-1 gap-5 sm:grid-cols-[minmax(0,14rem)_1fr]">
         <FotoPerfil key={`${perfil.raza}|${perfil.etapa}`} perfil={perfil} />
         <div className="flex min-w-0 flex-col justify-between gap-4">
           <div className="space-y-4">
             <div>
               <p className="mb-1.5 text-xs text-muted">Raza</p>
-              <Select id="raza" label="Raza" value={perfil.raza} options={LISTA_RAZAS} onChange={(e) => cambiarPerfil({ raza: e.target.value })} />
+              <Select id="raza" label="Raza" value={perfil.raza} options={LISTA_RAZAS} onChange={(raza) => cambiarPerfil({ raza })} />
             </div>
             <div>
               <p className="mb-1.5 text-xs text-muted">Etapa</p>

@@ -39,7 +39,7 @@ export default function App() {
     <div className="min-h-screen pb-16">
       <header className="sticky top-0 z-30">
         {/* Capa de fondo: degradado + desenfoque que se desvanece hacia abajo (sin línea ni borde inferior) */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-canvas/85 to-canvas/0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,#000_60%,transparent)]" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-canvas/95 via-canvas/85 to-canvas/0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,#000_72%,transparent)]" />
         <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 sm:gap-6 lg:px-8">
           <button type="button" onClick={() => go(desktop ? 'todo' : 'cuidado')} className="flex items-center gap-3" aria-label="Inicio">
             <Logo />

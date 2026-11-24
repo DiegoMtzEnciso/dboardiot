@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   build: { chunkSizeWarningLimit: 700 },
+  server: { headers: { 'Cache-Control': 'no-store' } }, // desarrollo: nunca cachear
   plugins: [
     react(),
     VitePWA({
