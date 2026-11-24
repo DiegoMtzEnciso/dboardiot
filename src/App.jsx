@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { LayoutGrid, PawPrint, Activity } from 'lucide-react'
 import { usePetStation } from './hooks/usePetStation'
 import { Logo, ThemeToggle, Toast } from './components/Shell'
-import { useMedia, useTheme } from './lib/hooks'
+import { useMedia, useSwipeTabs, useTheme } from './lib/hooks'
 import Hero from './components/bento/Hero'
 import Plan from './components/bento/Plan'
 import Dispensacion from './components/bento/Dispensacion'
@@ -31,8 +31,22 @@ export default function App() {
   // 'todo' = panel compuesto (solo escritorio); en tablet y móvil equivale a 'cuidado'
   const [tab, setTab] = useState('todo')
   const active = !desktop && tab === 'todo' ? 'cuidado' : tab
-  const go = (id) => { setTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const tabs = desktop ? [{ id: 'todo', label: 'Panel', icon: LayoutGrid }, ...SECCIONES] : SECCIONES
+  const ids = tabs.map((t) => t.id)
+  // Dirección de la animación de entrada: +1 = la vista nueva llega desde la derecha, -1 = desde la izquierda
+  const [dir, setDir] = useState(0)
+  const go = (id) => {
+    setDir(ids.indexOf(id) - ids.indexOf(active) > 0 ? 1 : -1)
+    setTab(id)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  // Swipe horizontal en tablet y móvil para moverse entre pestañas
+  const swipeRef = useRef(null)
+  useSwipeTabs({
+    ref: swipeRef,
+    enabled: !desktop,
+    onSwipe: (paso) => { const sig = ids[ids.indexOf(active) + paso]; if (sig) go(sig) },
+  })
   const tabCls = (id) => `flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors duration-200 ${active === id ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-line/5 hover:text-fg'}`
 
   return (
@@ -71,11 +85,13 @@ export default function App() {
         )}
       </header>
 
-      <main key={active} className={`view-enter mx-auto grid gap-5 px-4 pt-5 lg:grid-cols-12 lg:px-8 lg:pt-6 ${desktop ? 'max-w-[1440px]' : 'max-w-2xl'}`}>
+      <div ref={swipeRef} className={desktop ? '' : 'min-h-[70vh] touch-pan-y'}>
+      <main key={active} className={`${dir > 0 ? 'view-next' : dir < 0 ? 'view-prev' : 'view-enter'} mx-auto grid gap-5 px-4 pt-5 lg:grid-cols-12 lg:px-8 lg:pt-6 ${desktop ? 'max-w-[1440px]' : 'max-w-2xl'}`}>
         {VISTAS[active].map(([Card, span], i) => (
           <div key={i} className={`flex min-w-0 ${SPAN[span]}`}><Card s={s} /></div>
         ))}
       </main>
+      </div>
 
       <Toast toast={s.toast} />
     </div>

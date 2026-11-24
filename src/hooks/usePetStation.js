@@ -73,6 +73,25 @@ export const ACTIVIDADES = ['Baja', 'Media', 'Alta']
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 
+// ───────── Peso estimado por raza y etapa ─────────
+// `kg` en RAZAS es el peso adulto típico de la raza. Para las otras etapas se aplica un factor según el tamaño:
+// cachorro ≈ 3-4 meses (menos peso relativo cuanto más pequeña es la raza) y senior (razas grandes tienden a adelgazar).
+const FACTOR_CACHORRO = (kg) => (kg <= 5 ? 0.3 : kg <= 10 ? 0.35 : kg <= 20 ? 0.4 : 0.42)
+const FACTOR_SENIOR = (kg) => (kg <= 12 ? 1 : 0.95)
+const aMedioKg = (v) => (v < 10 ? Math.round(v * 10) / 10 : Math.round(v * 2) / 2) // 0.1 kg si es pequeño, 0.5 kg si es grande
+
+export function pesoEstimado(raza, etapa) {
+  const adulto = RAZAS[raza]?.kg ?? 15
+  if (etapa === 'Cachorro') return aMedioKg(adulto * FACTOR_CACHORRO(adulto))
+  if (etapa === 'Senior') return aMedioKg(adulto * FACTOR_SENIOR(adulto))
+  return adulto
+}
+
+// Pesos que registra el usuario para su perro (tienen prioridad sobre la estimación). Se guardan en el navegador.
+const LS_PESOS = 'petcare-pesos'
+export const claveKg = (raza, etapa) => `${raza}|${etapa}`
+const leerPesos = () => { try { return JSON.parse(localStorage.getItem(LS_PESOS)) ?? {} } catch { return {} } }
+
 export const MAX_TOMA_G = 85 // límite del dispensador por toma
 export const MIN_TOMA_G = 20
 const MAX_TOMAS = 6
@@ -88,8 +107,8 @@ const horariosPara = (n) => {
 
 // Cálculo nutricional local (RER/MER → gramos a ~3.6 kcal/g).
 // El requerimiento diario NO se recorta: si una toma excedería el límite del dispensador, se agregan tomas.
-export function calcularNutricion(raza, etapa, actividad) {
-  const kg = RAZAS[raza]?.kg ?? 15
+export function calcularNutricion(raza, etapa, actividad, kgPropio) {
+  const kg = kgPropio ?? pesoEstimado(raza, etapa)
   const rer = 70 * Math.pow(kg, 0.75)
   const fE = { Cachorro: 2.0, Adulto: 1.6, Senior: 1.2 }[etapa] ?? 1.6
   const fA = { Baja: 0.85, Media: 1, Alta: 1.2 }[actividad] ?? 1
@@ -102,6 +121,7 @@ export function calcularNutricion(raza, etapa, actividad) {
   const tope = diario / tomas > MAX_TOMA_G ? ` Aun así, el tope de ${MAX_TOMAS} tomas limita la ración a ${porToma * tomas} g.` : ''
   return {
     peso_kg: kg,
+    peso_propio: kgPropio != null,
     gramos_por_toma: porToma,
     total_diario: porToma * tomas,
     tomas,
@@ -165,12 +185,15 @@ export function usePetStation() {
   const remoteNutri = useRef(null)
   const nodeRed = useRef({ ok: null })
   const agenteReq = useRef(0)
-  const [nutricionIA, setNutricion] = useState(() => calcularNutricion(PERFIL0.raza, PERFIL0.etapa, PERFIL0.actividad))
+  const [nutricionIA, setNutricion] = useState(() => calcularNutricion(PERFIL0.raza, PERFIL0.etapa, PERFIL0.actividad, leerPesos()[claveKg(PERFIL0.raza, PERFIL0.etapa)]))
   const [telemetria, setTelemetria] = useState(TEL0)
   const [activityFeed, setFeed] = useState([])
   const [historial, setHistorial] = useState([])
   const client = useRef(null)
   const perfilRef = useRef(PERFIL0)
+  const pesosRef = useRef(leerPesos())
+  // Peso vigente: el registrado por el usuario o, si no hay, el estimado por raza y etapa
+  const kgDe = useCallback((p) => pesosRef.current[claveKg(p.raza, p.etapa)] ?? pesoEstimado(p.raza, p.etapa), [])
   useEffect(() => { perfilRef.current = perfil }, [perfil])
   const fotoReq = useRef(0)
   const telRef = useRef(TEL0)
@@ -303,7 +326,7 @@ export function usePetStation() {
     const antes = remoteNutri.current
     let etapa = 'enviando perfil'
     try {
-      const payload = { peso_kg: RAZAS[p.raza]?.kg ?? 15, etapa: p.etapa, actividad: p.actividad, auto: p.auto }
+      const payload = { peso_kg: kgDe(p), etapa: p.etapa, actividad: p.actividad, auto: p.auto }
       const enviar = () => fetchJson(`${BASE}/api/petstation/comando`, 8000, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accion: 'perfil', ...payload, raza: p.raza }),
@@ -331,7 +354,7 @@ export function usePetStation() {
       const dx = diagnosticar(err, etapa, seg(), nodeRed.current)
       console.debug('[PetCare IA]', dx.tipo, '·', dx.detalle, `(${seg()} s)`)
     }
-  }, [])
+  }, [kgDe])
 
   const agenteTimer = useRef(null)
   useEffect(() => () => clearTimeout(agenteTimer.current), [])
@@ -340,7 +363,7 @@ export function usePetStation() {
     const nuevo = { ...perfilRef.current, ...cambio }
     perfilRef.current = nuevo
     setPerfil(nuevo)
-    const nut = calcularNutricion(nuevo.raza, nuevo.etapa, nuevo.actividad)
+    const nut = calcularNutricion(nuevo.raza, nuevo.etapa, nuevo.actividad, pesosRef.current[claveKg(nuevo.raza, nuevo.etapa)])
     setNutricion(nut)
     if (cambio.raza || cambio.etapa) cargarFoto(nuevo.raza, nuevo.etapa)
     const payload = { peso_kg: nut.peso_kg, etapa: nuevo.etapa, actividad: nuevo.actividad, auto: nuevo.auto }
@@ -351,13 +374,27 @@ export function usePetStation() {
     agenteTimer.current = setTimeout(() => consultarAgente(nuevo), 700)
   }, [cargarFoto, pub, log, consultarAgente])
 
+  // Registrar (o borrar con null) el peso real del perro para la raza y etapa actuales
+  const setPesoPropio = useCallback((kg) => {
+    const p = perfilRef.current
+    const clave = claveKg(p.raza, p.etapa)
+    const mapa = { ...pesosRef.current }
+    if (kg == null) delete mapa[clave]; else mapa[clave] = kg
+    pesosRef.current = mapa
+    try { localStorage.setItem(LS_PESOS, JSON.stringify(mapa)) } catch { /* sin almacenamiento */ }
+    const nut = calcularNutricion(p.raza, p.etapa, p.actividad, mapa[clave])
+    setNutricion(nut)
+    pub(T.perfil, JSON.stringify({ peso_kg: nut.peso_kg, etapa: p.etapa, actividad: p.actividad, auto: p.auto }))
+    log(kg == null ? `Peso restablecido: ${nut.peso_kg} kg (estimado)` : `Peso registrado: ${kg} kg`)
+  }, [pub, log])
+
   const setAuto = useCallback((auto) => {
     setPerfil((p) => ({ ...p, auto }))
     const p = perfilRef.current
-    pub(T.perfil, JSON.stringify({ peso_kg: RAZAS[p.raza]?.kg ?? 15, etapa: p.etapa, actividad: p.actividad, auto }))
+    pub(T.perfil, JSON.stringify({ peso_kg: kgDe(p), etapa: p.etapa, actividad: p.actividad, auto }))
     post({ accion: 'auto_ia', auto })
     log(`Dispensado automático IA ${auto ? 'activado' : 'desactivado'}`)
-  }, [pub, post, log])
+  }, [pub, post, log, kgDe])
 
   const dispensarIA = useCallback(() => {
     pub(T.racion, 'IA')
@@ -381,10 +418,10 @@ export function usePetStation() {
   const fijarHoraPrueba = useCallback((horaStr) => {
     const [h, m] = String(horaStr).split(':').map(Number)
     const p = perfilRef.current
-    pub(T.perfil, JSON.stringify({ peso_kg: RAZAS[p.raza]?.kg ?? 15, etapa: p.etapa, actividad: p.actividad, auto: p.auto, hora_prueba: h, min_prueba: m }))
+    pub(T.perfil, JSON.stringify({ peso_kg: kgDe(p), etapa: p.etapa, actividad: p.actividad, auto: p.auto, hora_prueba: h, min_prueba: m }))
     post({ accion: 'hora_prueba', hora_prueba: horaStr })
     log(`Hora de prueba fijada: ${horaStr}`)
-  }, [pub, post, log])
+  }, [pub, post, log, kgDe])
 
   const setDemo = useCallback((on) => {
     demoRef.current = on
@@ -438,8 +475,8 @@ export function usePetStation() {
 
   return useMemo(() => ({
     mqttOnline, perfil, nutricionIA, demo, setDemo, toast, ...vista,
-    cambiarPerfil, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba,
+    cambiarPerfil, setPesoPropio, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [mqttOnline, perfil, nutricionIA, demo, setDemo, toast, vista.telemetria, vista.historial, vista.activityFeed, vista.isInitialLoading,
-    cambiarPerfil, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba])
+    cambiarPerfil, setPesoPropio, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba])
 }

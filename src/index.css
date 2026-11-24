@@ -142,6 +142,11 @@ html.theme-anim *::after {
 @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 
 .view-enter { animation: fadeUp .3s ease both; }
+/* Entrada lateral al cambiar de pestaña (swipe o clic): 240 ms */
+@keyframes slideNext { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes slidePrev { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+.view-next { animation: slideNext 240ms ease both; }
+.view-prev { animation: slidePrev 240ms ease both; }
 .photo-fade { animation: photoFade .3s ease both; }
 .toast-in { animation: toastIn .22s ease both; }
 
