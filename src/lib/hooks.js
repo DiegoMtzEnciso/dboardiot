@@ -59,11 +59,12 @@ export function useNowMin() {
   return m
 }
 
-// ───────── Cambio de pestañas con gesto horizontal (tablet y móvil) ─────────
-const UMBRAL_PX = 60 // distancia mínima para considerar un swipe
+// ───────── Cambio de pestañas con gesto horizontal (táctil, mouse y trackpad) ─────────
+const UMBRAL_PX = 60 // distancia mínima de arrastre (táctil y mouse)
+const UMBRAL_WHEEL = 90 // desplazamiento horizontal acumulado del trackpad
 const INTERACTIVO = 'button,input,select,textarea,a,label,summary,[role=switch],[role=listbox],[role=slider],[contenteditable=true],[data-no-swipe]'
 
-// Devuelve true si el toque empieza dentro de un área con scroll horizontal propio
+// Devuelve true si el gesto empieza dentro de un área con scroll horizontal propio
 function dentroDeScrollHorizontal(objetivo, raiz) {
   for (let n = objetivo; n && n !== raiz; n = n.parentElement) {
     if (n.scrollWidth > n.clientWidth + 2) {
@@ -74,9 +75,10 @@ function dentroDeScrollHorizontal(objetivo, raiz) {
   return false
 }
 
-// `ref` = contenedor que recibe el gesto (debe llevar la clase touch-pan-y para que el scroll vertical siga nativo).
-// `onSwipe(+1)` = hacia la derecha en la lista de pestañas (deslizar a la izquierda); `onSwipe(-1)` = hacia la izquierda.
-export function useSwipeTabs({ ref, enabled, onSwipe }) {
+// `ref` = contenedor que recibe el gesto (con la clase touch-pan-y para que el scroll vertical siga nativo).
+// `onSwipe(+1)` = pestaña siguiente; `onSwipe(-1)` = pestaña anterior.
+// Soporta: dedo (móvil/iPad), arrastre con mouse y deslizamiento horizontal con dos dedos en el trackpad.
+export function useSwipeTabs({ ref, enabled = true, onSwipe }) {
   const cb = useRef(onSwipe)
   useEffect(() => { cb.current = onSwipe })
 
@@ -85,17 +87,27 @@ export function useSwipeTabs({ ref, enabled, onSwipe }) {
     if (!el || !enabled) return undefined
     const reducido = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let toque = null
+    let wheel = { acum: 0, fin: 0, bloqueo: 0 }
 
     const reponer = () => {
-      el.style.transition = reducido() ? 'none' : 'transform 220ms ease, opacity 220ms ease'
+      el.style.transition = reducido() ? 'none' : 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms cubic-bezier(0.22, 1, 0.36, 1)'
       el.style.transform = ''
       el.style.opacity = ''
     }
+    // El contenido acompaña al gesto con resistencia (máx. 48 px)
+    const seguir = (dx) => {
+      if (reducido()) return
+      const d = Math.max(-48, Math.min(48, dx * 0.35))
+      el.style.transition = 'none'
+      el.style.transform = `translateX(${d}px)`
+      el.style.opacity = String(1 - Math.min(0.15, Math.abs(d) / 320))
+    }
 
+    // ── Puntero: dedo, lápiz o mouse ──
     const abajo = (e) => {
-      if (e.pointerType === 'mouse' || !e.isPrimary) return
+      if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return
       if (e.target.closest?.(INTERACTIVO) || dentroDeScrollHorizontal(e.target, el)) { toque = null; return }
-      toque = { id: e.pointerId, x: e.clientX, y: e.clientY, eje: null }
+      toque = { id: e.pointerId, tipo: e.pointerType, x: e.clientX, y: e.clientY, eje: null }
     }
     const mover = (e) => {
       if (!toque || e.pointerId !== toque.id) return
@@ -104,34 +116,61 @@ export function useSwipeTabs({ ref, enabled, onSwipe }) {
       if (!toque.eje) {
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
         toque.eje = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v' // el gesto se bloquea en un eje
+        if (toque.eje === 'h' && toque.tipo === 'mouse') { // con mouse: seguir el arrastre y no seleccionar texto
+          try { el.setPointerCapture(e.pointerId) } catch { /* sin captura */ }
+          document.body.style.userSelect = 'none'
+        }
       }
-      if (toque.eje !== 'h' || reducido()) return
-      // El contenido acompaña al dedo con resistencia (máx. 48 px)
-      const d = Math.max(-48, Math.min(48, dx * 0.35))
-      el.style.transition = 'none'
-      el.style.transform = `translateX(${d}px)`
-      el.style.opacity = String(1 - Math.min(0.15, Math.abs(d) / 320))
+      if (toque.eje === 'h') seguir(dx)
     }
-    const arriba = (e) => {
+    const terminar = (e, cancelado) => {
       if (!toque || e.pointerId !== toque.id) return
       const dx = e.clientX - toque.x
       const dy = e.clientY - toque.y
-      const valido = toque.eje === 'h' && Math.abs(dx) >= UMBRAL_PX && Math.abs(dx) > Math.abs(dy) * 1.5
+      const valido = !cancelado && toque.eje === 'h' && Math.abs(dx) >= UMBRAL_PX && Math.abs(dx) > Math.abs(dy) * 1.5
       toque = null
+      document.body.style.userSelect = ''
       reponer()
       if (valido) cb.current(dx < 0 ? 1 : -1)
     }
-    const cancelar = () => { if (toque) { toque = null; reponer() } }
+    const arriba = (e) => terminar(e, false)
+    const cancelar = (e) => terminar(e, true)
+
+    // ── Trackpad: deslizamiento horizontal con dos dedos (eventos wheel con deltaX) ──
+    const rueda = (e) => {
+      if (e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.2) return // vertical o zoom: no es para nosotros
+      if (dentroDeScrollHorizontal(e.target, el) || e.target.closest?.('[role=listbox],[data-no-swipe]')) return
+      e.preventDefault() // evita el gesto "atrás/adelante" del navegador
+      const ahora = Date.now()
+      if (ahora < wheel.bloqueo) return // la inercia del trackpad no debe encadenar cambios
+      wheel.acum = ahora - wheel.fin > 220 ? e.deltaX : wheel.acum + e.deltaX
+      wheel.fin = ahora
+      seguir(-wheel.acum)
+      clearTimeout(wheel.t)
+      wheel.t = setTimeout(() => { wheel.acum = 0; reponer() }, 180)
+      if (Math.abs(wheel.acum) >= UMBRAL_WHEEL) {
+        const paso = wheel.acum > 0 ? 1 : -1
+        wheel.acum = 0
+        wheel.bloqueo = ahora + 700
+        clearTimeout(wheel.t)
+        reponer()
+        cb.current(paso)
+      }
+    }
 
     el.addEventListener('pointerdown', abajo)
     el.addEventListener('pointermove', mover)
     el.addEventListener('pointerup', arriba)
     el.addEventListener('pointercancel', cancelar)
+    el.addEventListener('wheel', rueda, { passive: false })
     return () => {
       el.removeEventListener('pointerdown', abajo)
       el.removeEventListener('pointermove', mover)
       el.removeEventListener('pointerup', arriba)
       el.removeEventListener('pointercancel', cancelar)
+      el.removeEventListener('wheel', rueda)
+      clearTimeout(wheel.t)
+      document.body.style.userSelect = ''
       el.style.transform = ''
       el.style.opacity = ''
       el.style.transition = ''
