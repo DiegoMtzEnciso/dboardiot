@@ -44,6 +44,8 @@ export const FOTOS_LOCALES = {
   'French Poodle': { src: '/perros/poodle.webp', pos: '64% 72%' },
   'Labrador Retriever': { src: '/perros/labrador.webp', pos: '50% 20%' },
   'Mestizo / Criollo (Talla Mediana 15kg)': { src: '/perros/mestiza.webp', pos: '50% 12%' },
+  // Foto vertical con el mechón arriba: 8% vertical lo deja completo incluso en formato apaisado
+  'Xoloitzcuintle': { src: '/perros/xoloitzcuintle.webp', pos: '45% 8%' },
   // Cabeza y orejas en el tercio superior: 25% vertical las deja completas sin cortar
   'Pastor Alemán': { src: '/perros/pastor-aleman.webp', pos: '55% 25%' },
   // Varias fotos: se alternan en el perfil con los puntos o tocando la imagen
