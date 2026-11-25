@@ -5,9 +5,8 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      boxShadow: { card: 'var(--shadow-card)' },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Bricolage Grotesque"', 'Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       // Tokens semánticos: sus valores cambian con el tema (ver src/index.css)
       colors: {
@@ -16,7 +15,9 @@ export default {
         surface2: token('surface2'),
         hairline: 'rgb(var(--line) / var(--hairline-a))',
         'hairline-strong': 'rgb(var(--line) / var(--hairline-strong-a))',
-        data: token('data'),
+        food: token('food'),
+        water: token('water'),
+        'on-accent': token('on-accent'),
         line: token('line'),
         fg: token('fg'),
         fg2: token('fg2'),
@@ -25,7 +26,6 @@ export default {
         accent: token('accent'),
         ok: token('ok'),
         warn: token('warn'),
-        edge: token('edge'),
       },
     },
   },

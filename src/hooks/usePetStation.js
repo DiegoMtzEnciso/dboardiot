@@ -41,9 +41,11 @@ export const RAZAS = {
 }
 // Fotos propias (public/perros/). 'pos' = object-position para encuadrar la cara sin cortar orejas ni adornos.
 export const FOTOS_LOCALES = {
-  'French Poodle': { src: '/perros/poodle.webp', pos: '50% 72%' },
+  'French Poodle': { src: '/perros/poodle.webp', pos: '64% 72%' },
   'Labrador Retriever': { src: '/perros/labrador.webp', pos: '50% 20%' },
   'Mestizo / Criollo (Talla Mediana 15kg)': { src: '/perros/mestiza.webp', pos: '50% 12%' },
+  // Cabeza y orejas en el tercio superior: 25% vertical las deja completas sin cortar
+  'Pastor Alemán': { src: '/perros/pastor-aleman.webp', pos: '55% 25%' },
   // Varias fotos: se alternan en el perfil con los puntos o tocando la imagen
   'Pastor Belga Malinois': {
     fotos: [
@@ -53,7 +55,7 @@ export const FOTOS_LOCALES = {
   },
   // Foto por etapa: 'default' sirve de respaldo (p. ej. Senior o etapa sin foto propia)
   'Schnauzer Miniatura': {
-    Cachorro: { src: '/perros/schnauzer-cachorro.jpg', pos: '50% 30%' },
+    Cachorro: { src: '/perros/schnauzer-cachorro.jpg', pos: '62% 30%' },
     Adulto: { src: '/perros/schnauzer-adulto.jpg', pos: '56% 0%' },
     default: { src: '/perros/schnauzer-adulto.jpg', pos: '56% 0%' },
   },
@@ -93,6 +95,7 @@ export const claveKg = (raza, etapa) => `${raza}|${etapa}`
 const leerPesos = () => { try { return JSON.parse(localStorage.getItem(LS_PESOS)) ?? {} } catch { return {} } }
 
 export const MAX_TOMA_G = 85 // límite del dispensador por toma
+export const MIN_MANUAL_G = 5
 export const MIN_TOMA_G = 20
 const MAX_TOMAS = 6
 
@@ -231,23 +234,26 @@ export function usePetStation() {
     else setFeed((f) => [ev, ...f].slice(0, 40))
   }, [notificar])
 
+  // Devuelve true si la orden salió (en vista previa no se envía nada, pero se simula el éxito)
   const pub = useCallback((topic, msg) => {
-    if (demoRef.current) return
+    if (demoRef.current) return true
     try {
-      if (client.current?.connected) client.current.publish(topic, msg, { qos: 1 })
-      else pubFallo.current = true
-    } catch { pubFallo.current = true }
+      if (client.current?.connected) { client.current.publish(topic, msg, { qos: 1 }); return true }
+    } catch { /* se informa abajo */ }
+    pubFallo.current = true
+    return false
   }, [])
 
   const post = useCallback(async (payload) => {
-    if (demoRef.current || !REST_OK) return
+    if (demoRef.current || !REST_OK) return false
     try {
-      await fetch(`${BASE}/api/petstation/comando`, {
+      const r = await fetch(`${BASE}/api/petstation/comando`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-    } catch { /* silencioso */ }
+      return r.ok
+    } catch { return false }
   }, [])
 
   const cargarFoto = useCallback(async (raza, etapa) => {
@@ -366,38 +372,33 @@ export function usePetStation() {
   const agenteTimer = useRef(null)
   useEffect(() => () => clearTimeout(agenteTimer.current), [])
 
-  const cambiarPerfil = useCallback((cambio) => {
-    const nuevo = { ...perfilRef.current, ...cambio }
+  // Peso registrado por el usuario para una raza y etapa (undefined = se usa el estimado)
+  const pesoRegistrado = useCallback((raza, etapa) => pesosRef.current[claveKg(raza, etapa)], [])
+
+  // Guarda de una sola vez raza, etapa, actividad y peso (kg = null → estimado) y publica el perfil una única vez
+  const guardarPerfil = useCallback(({ raza, etapa, actividad, kg }) => {
+    const antes = perfilRef.current
+    const nuevo = { ...antes, raza, etapa, actividad }
+    const clave = claveKg(raza, etapa)
+    const mapa = { ...pesosRef.current }
+    if (kg == null) delete mapa[clave]; else mapa[clave] = kg
+    pesosRef.current = mapa
+    if (!demoRef.current) { try { localStorage.setItem(LS_PESOS, JSON.stringify(mapa)) } catch { /* sin almacenamiento */ } }
     perfilRef.current = nuevo
     setPerfil(nuevo)
-    const nut = calcularNutricion(nuevo.raza, nuevo.etapa, nuevo.actividad, pesosRef.current[claveKg(nuevo.raza, nuevo.etapa)])
+    const nut = calcularNutricion(raza, etapa, actividad, mapa[clave])
     setNutricion(nut)
-    if (cambio.raza || cambio.etapa) cargarFoto(nuevo.raza, nuevo.etapa)
-    const payload = { peso_kg: nut.peso_kg, etapa: nuevo.etapa, actividad: nuevo.actividad, auto: nuevo.auto }
-    pub(T.perfil, JSON.stringify(payload))
-    log(`Perfil actualizado: ${nuevo.raza} · ${nuevo.etapa} · ${nuevo.actividad}`)
-    // Consulta en segundo plano (silenciosa); evita repetirla si el usuario cambia varias opciones seguidas
+    if (antes.raza !== raza || antes.etapa !== etapa) cargarFoto(raza, etapa)
+    pub(T.perfil, JSON.stringify({ peso_kg: nut.peso_kg, etapa, actividad, auto: nuevo.auto }))
+    log(`Perfil guardado: ${raza} · ${etapa} · ${nut.peso_kg} kg`)
     clearTimeout(agenteTimer.current)
     agenteTimer.current = setTimeout(() => consultarAgente(nuevo), 700)
   }, [cargarFoto, pub, log, consultarAgente])
 
-  // Registrar (o borrar con null) el peso real del perro para la raza y etapa actuales
-  const setPesoPropio = useCallback((kg) => {
-    const p = perfilRef.current
-    const clave = claveKg(p.raza, p.etapa)
-    const mapa = { ...pesosRef.current }
-    if (kg == null) delete mapa[clave]; else mapa[clave] = kg
-    pesosRef.current = mapa
-    try { localStorage.setItem(LS_PESOS, JSON.stringify(mapa)) } catch { /* sin almacenamiento */ }
-    const nut = calcularNutricion(p.raza, p.etapa, p.actividad, mapa[clave])
-    setNutricion(nut)
-    pub(T.perfil, JSON.stringify({ peso_kg: nut.peso_kg, etapa: p.etapa, actividad: p.actividad, auto: p.auto }))
-    log(kg == null ? `Peso restablecido: ${nut.peso_kg} kg (estimado)` : `Peso registrado: ${kg} kg`)
-  }, [pub, log])
-
   const setAuto = useCallback((auto) => {
-    setPerfil((p) => ({ ...p, auto }))
-    const p = perfilRef.current
+    const p = { ...perfilRef.current, auto }
+    perfilRef.current = p
+    setPerfil(p)
     pub(T.perfil, JSON.stringify({ peso_kg: kgDe(p), etapa: p.etapa, actividad: p.actividad, auto }))
     post({ accion: 'auto_ia', auto })
     log(`Dispensado automático IA ${auto ? 'activado' : 'desactivado'}`)
@@ -413,20 +414,24 @@ export function usePetStation() {
     })
   }, [])
 
-  const dispensarIA = useCallback(() => {
-    pub(T.racion, 'IA')
-    post({ accion: 'dispensar' })
-    sumarServido(Number(nutricionIA.gramos_por_toma) || 0)
-    log(`Ración IA solicitada (${nutricionIA.gramos_por_toma} g)`)
-  }, [pub, post, log, sumarServido, nutricionIA.gramos_por_toma])
+  // Solo se suma a lo servido si la orden salió por MQTT o la aceptó Node-RED
+  const dispensar = useCallback(async (mensajeMqtt, payload, g, texto) => {
+    const salio = pub(T.racion, mensajeMqtt)
+    const rest = post({ accion: 'dispensar', ...payload })
+    if (salio) { sumarServido(g); log(texto); return true }
+    const ok = await rest
+    if (ok) { pubFallo.current = false; sumarServido(g) }
+    log(texto)
+    return ok
+  }, [pub, post, log, sumarServido])
+
+  const gramosPlan = Number(nutricionIA.gramos_por_toma) || 0
+  const dispensarIA = useCallback(() => dispensar('IA', {}, gramosPlan, `Ración IA solicitada (${gramosPlan} g)`), [dispensar, gramosPlan])
 
   const dispensarManual = useCallback((gramos) => {
-    const g = clamp(Number(gramos) || 5, 5, 85)
-    pub(T.racion, JSON.stringify({ gramos: g }))
-    post({ accion: 'dispensar', gramos: g })
-    sumarServido(g)
-    log(`Ración manual solicitada: ${g} g`)
-  }, [pub, post, log, sumarServido])
+    const g = clamp(Number(gramos) || MIN_MANUAL_G, MIN_MANUAL_G, MAX_TOMA_G)
+    return dispensar(JSON.stringify({ gramos: g }), { gramos: g }, g, `Ración manual solicitada: ${g} g`)
+  }, [dispensar])
 
   const tararBascula = useCallback(() => {
     pub(T.tare, '1')
@@ -442,9 +447,24 @@ export function usePetStation() {
     log(`Hora de prueba fijada: ${horaStr}`)
   }, [pub, post, log, kgDe])
 
+  const previo = useRef(null)
+  const nutricionRef = useRef(nutricionIA)
+  useEffect(() => { nutricionRef.current = nutricionIA }, [nutricionIA])
   const setDemo = useCallback((on) => {
+    if (on === demoRef.current) return
     demoRef.current = on
     setDemoState(on)
+    // Lo que se cambie durante la vista previa se descarta al salir: el perfil vuelve a ser el de la estación
+    clearTimeout(agenteTimer.current)
+    if (on) previo.current = { perfil: perfilRef.current, pesos: pesosRef.current, nutricion: nutricionRef.current }
+    else if (previo.current) {
+      const v = previo.current
+      perfilRef.current = v.perfil
+      pesosRef.current = v.pesos
+      setPerfil(v.perfil)
+      setNutricion(v.nutricion)
+      fotoReq.current++
+    }
     if (on) {
       setExtraDemo(0)
       setTelDemo(TEL0)
@@ -497,8 +517,8 @@ export function usePetStation() {
 
   return useMemo(() => ({
     mqttOnline, perfil, nutricionIA, demo, setDemo, toast, extraHoy, ...vista,
-    cambiarPerfil, setPesoPropio, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba,
+    guardarPerfil, pesoRegistrado, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [mqttOnline, perfil, nutricionIA, demo, setDemo, toast, extraHoy, vista.telemetria, vista.historial, vista.activityFeed, vista.isInitialLoading,
-    cambiarPerfil, setPesoPropio, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba])
+    guardarPerfil, pesoRegistrado, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba])
 }

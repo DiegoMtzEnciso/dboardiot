@@ -2,169 +2,174 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ───────── Tokens de tema (valores RGB para poder usar opacidad) ─────────
-   canvas   fondo de la página          surface  tarjetas / superficies
-   surface2 superficie hundida (tiles)  line     color base de bordes y tintes
-   fg / fg2 texto principal / medio     muted    texto secundario (AA sobre surface)
-   faint    texto terciario y controles off
-   accent   texto/íconos de marca       data     rellenos de barras y gráficas
-   ok / warn / edge   estados: salud, atención, Edge IA                          */
+/* Un solo espacio: la mascota fija a la izquierda y su día a la derecha.
+   El color dice de qué se habla: food = comida, water = agua, accent = acciones, warn = requiere atención. */
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
-  --base: 6 9 19;            /* #060913 */
-  --surface: 11 15 25;       /* #0B0F19 */
-  --surface2: 16 22 36;      /* #101624 */
-  --line: 255 255 255;
-  --hairline-a: 0.06;        /* rgba(255,255,255,.06) */
-  --shadow-card: none;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-bg-hover: rgba(255, 255, 255, 0.07);
-  --glass-inner: rgba(255, 255, 255, 0.05);
-  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 12px 40px -16px rgba(0, 0, 0, 0.55);
-  --glass-sheen: rgba(255, 255, 255, 0.09);
-  --pop-bg: rgba(16, 22, 36, 0.72);
-  --pop-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 18px 48px -12px rgba(0, 0, 0, 0.65);
-  --blob-1: rgba(6, 182, 212, 0.20);
-  --blob-2: rgba(99, 102, 241, 0.18);
-  --blob-3: rgba(16, 185, 129, 0.10);
-  --hairline-strong-a: 0.12;
-  --fg: 248 250 252;         /* #F8FAFC */
-  --fg2: 203 213 225;
-  --muted: 148 163 184;      /* #94A3B8 */
-  --faint: 118 133 156;
-  --accent: 56 189 248;      /* #38BDF8 */
-  --data: 56 189 248;
-  --ok: 52 211 153;
-  --warn: 251 191 36;
-  --edge: 165 180 252;
+  --base: 15 23 26;
+  --surface: 22 33 37;
+  --surface2: 31 45 50;
+  --line: 214 234 237;
+  --hairline-a: 0.08;
+  --hairline-strong-a: 0.18;
+  --fg: 240 247 247;
+  --fg2: 203 219 221;
+  --muted: 152 174 178;
+  --faint: 112 135 140;
+  --accent: 52 196 222;
+  --on-accent: 5 30 36;
+  --food: 240 184 92;
+  --water: 98 182 240;
+  --ok: 78 206 160;
+  --warn: 255 146 116;
+  --glass: rgb(38 58 64 / .5);
+  --glass-solid: rgb(24 37 41 / .84);
+  --glass-in: rgb(214 234 237 / .07);
+  --glass-edge: rgb(255 255 255 / .06);
+  --glass-hi: rgb(255 255 255 / .16);
+  --glass-shadow: 0 18px 44px -18px rgb(0 0 0 / .55);
+  --luz-1: rgb(20 150 178 / .5);
+  --luz-2: rgb(206 138 40 / .3);
+  --luz-3: rgb(14 150 112 / .38);
 }
 [data-theme='light'] {
   color-scheme: light;
-  --base: 244 247 251;       /* #F4F7FB */
-  --surface: 255 255 255;    /* #FFFFFF */
-  --surface2: 248 250 252;   /* #F8FAFC */
-  --line: 15 23 42;
-  --hairline-a: 0.07;        /* rgba(15,23,42,.07) */
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 24px -14px rgba(15, 23, 42, 0.14);
-  --glass-bg: rgba(255, 255, 255, 0.62);
-  --glass-bg-hover: rgba(255, 255, 255, 0.74);
-  --glass-inner: rgba(15, 23, 42, 0.045);
-  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 40px -18px rgba(15, 23, 42, 0.22);
-  --glass-sheen: rgba(255, 255, 255, 0.55);
-  --pop-bg: rgba(255, 255, 255, 0.82);
-  --pop-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 18px 48px -14px rgba(15, 23, 42, 0.30);
-  --blob-1: rgba(56, 189, 248, 0.34);
-  --blob-2: rgba(129, 140, 248, 0.24);
-  --blob-3: rgba(52, 211, 153, 0.20);
-  --hairline-strong-a: 0.16;
-  --fg: 15 23 42;            /* #0F172A */
-  --fg2: 51 65 85;
-  --muted: 71 85 105;        /* #475569 */
-  --faint: 100 116 139;
-  --accent: 3 105 161;       /* sky-700: 6:1 sobre blanco */
-  --data: 2 132 199;         /* sky-600 */
-  --ok: 4 120 87;
-  --warn: 180 83 9;
-  --edge: 79 70 229;
+  --base: 231 238 239;
+  --surface: 250 252 252;
+  --surface2: 235 241 242;
+  --line: 12 44 52;
+  --hairline-a: 0.1;
+  --hairline-strong-a: 0.22;
+  --fg: 14 34 40;
+  --fg2: 44 68 75;
+  --muted: 74 98 105;
+  --faint: 112 135 141;
+  --accent: 0 108 134;
+  --on-accent: 255 255 255;
+  --food: 168 98 10;
+  --water: 22 104 172;
+  --ok: 8 112 84;
+  --warn: 168 46 22;
+  --glass: rgb(255 255 255 / .6);
+  --glass-solid: rgb(250 252 252 / .88);
+  --glass-in: rgb(12 44 52 / .06);
+  --glass-edge: rgb(255 255 255 / .4);
+  --glass-hi: rgb(255 255 255 / .95);
+  --glass-shadow: 0 18px 44px -20px rgb(12 60 72 / .3);
+  --luz-1: rgb(64 186 214 / .55);
+  --luz-2: rgb(244 190 104 / .5);
+  --luz-3: rgb(76 200 160 / .45);
 }
 
 html, body, #root { min-height: 100%; }
 body {
   margin: 0;
-  background-color: rgb(var(--base));
-  background-image:
-    radial-gradient(55rem 32rem at 8% -6%, var(--blob-1), transparent 70%),
-    radial-gradient(50rem 30rem at 96% 14%, var(--blob-2), transparent 70%),
-    radial-gradient(60rem 36rem at 50% 108%, var(--blob-3), transparent 70%);
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  transition: background-color 220ms ease, color 220ms ease;
+  background: rgb(var(--base));
   color: rgb(var(--fg));
-  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  isolation: isolate;
+  font-family: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
-.tabular, .tabular-nums { font-variant-numeric: tabular-nums; }
-
-/* Transición suave al cambiar de tema (la clase se añade solo durante el cambio) */
-html.theme-anim *,
-html.theme-anim *::before,
-html.theme-anim *::after {
-  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, fill 220ms ease, stroke 220ms ease, box-shadow 220ms ease !important;
+/* Luces de fondo: dan al cristal algo que refractar. Capa fija propia (no background-attachment, que falla en iOS) */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(46rem 34rem at 4% 8%, var(--luz-1), transparent 70%),
+    radial-gradient(44rem 32rem at 98% 30%, var(--luz-2), transparent 70%),
+    radial-gradient(52rem 36rem at 48% 104%, var(--luz-3), transparent 70%);
 }
 
-/* Revelado circular del tema (View Transitions): la animación del clip-path se define en JS */
-::view-transition-old(root),
-::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* Cristal esmerilado: translúcido, con desenfoque, borde claro y brillo en el canto superior */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+}
+.glass-bar {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+}
+.glass-pop {
+  background: var(--glass-solid);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--glass-edge);
+}
+.glass .bg-surface2, .cajon .bg-surface2 { background-color: var(--glass-in); }
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-bar, .glass-pop, .cajon::before { background: rgb(var(--surface)) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+
+/* Cambio de tema (la lógica está en hooks.js). View Transitions: la vista nueva entra con la onda circular (clip-path, animada en JS),
+   la vieja queda quieta debajo, y el conjunto se desenfoca y encoge a la vez. Sin fundido: así no hay destello ni mezcla de brillos. */
+@keyframes temaCristal { 50% { filter: blur(2.5px); transform: scale(.996); } }
+::view-transition { background: rgb(var(--base)); }
+::view-transition-group(root) { animation: temaCristal 400ms cubic-bezier(.22, 1, .36, 1); }
+::view-transition-image-pair(root) { isolation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
 
-/* ───────── Liquid glass: cristal translúcido sin marco ───────── */
-.glass {
-  position: relative;
-  isolation: isolate;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(26px) saturate(170%);
-  backdrop-filter: blur(26px) saturate(170%);
-  box-shadow: var(--glass-shadow);
-  transition: background-color 200ms ease, box-shadow 200ms ease;
+/* Respaldo sin View Transitions: copia con el aspecto nuevo, encima de todo y sin capturar clics ni scroll */
+.capa-tema {
+  position: fixed; top: 0; left: 0; z-index: 2147483000; overflow: hidden; pointer-events: none; isolation: isolate;
+  background: rgb(var(--base)); color: rgb(var(--fg));
+  font-family: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
-.glass::before { /* brillo líquido en la esquina superior */
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: linear-gradient(135deg, var(--glass-sheen), transparent 38%);
-  pointer-events: none;
+.capa-tema::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(46rem 34rem at 4% 8%, var(--luz-1), transparent 70%),
+    radial-gradient(44rem 32rem at 98% 30%, var(--luz-2), transparent 70%),
+    radial-gradient(52rem 36rem at 48% 104%, var(--luz-3), transparent 70%);
 }
-.glass:hover { background: var(--glass-bg-hover); }
-/* Elementos internos (tiles, pistas, campos) también translúcidos sobre el cristal */
-.glass .bg-surface2 { background-color: var(--glass-inner); }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass { background: rgb(var(--surface)); }
+.capa-tema > * { position: relative; z-index: 1; }
+.theme-icon { transition: transform 250ms cubic-bezier(.22, 1, .36, 1), opacity 250ms cubic-bezier(.22, 1, .36, 1); }
+
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+@keyframes subir { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes lateral { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes hoja { from { transform: translateY(100%); } to { transform: none; } }
+.photo-fade { animation: aparecer .3s ease both; }
+.toast-in, .pop-in { animation: subir .18s ease both; }
+
+/* Editor de perfil: hoja inferior en teléfono, panel lateral en pantallas anchas */
+.cajon {
+  position: fixed; inset: auto 0 0 0; margin: 0; padding: 0;
+  width: 100%; max-width: none; max-height: 92dvh; overflow: hidden;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: transparent; color: rgb(var(--fg));
+  border: 1px solid var(--glass-edge);
+}
+/* El desenfoque va en ::before: en el propio dialog desplazaría la lista de razas, que es position: fixed */
+.cajon::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: var(--glass-solid);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+.cajon > form { max-height: 92dvh; overflow-y: auto; }
+@media (min-width: 640px) { .cajon > form { max-height: none; height: 100%; } }
+.cajon[open] { animation: hoja .28s cubic-bezier(.22, 1, .36, 1) backwards; }
+.cajon::backdrop { background: rgb(4 12 14 / .45); }
+@media (min-width: 640px) {
+  .cajon { inset: 0 0 0 auto; width: 27rem; height: 100dvh; max-height: none; border-radius: 1.5rem 0 0 1.5rem; }
+  .cajon[open] { animation-name: lateral; }
 }
 
-/* Lista desplegable del selector: cristal más denso para que el texto se lea sobre cualquier fondo */
-.glass-pop {
-  background: var(--pop-bg);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  backdrop-filter: blur(28px) saturate(180%);
-  box-shadow: var(--pop-shadow);
-}
-@keyframes popIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
-.pop-in { animation: popIn 140ms ease-out both; transform-origin: top center; }
-
-/* ───────── Animaciones ───────── */
-@keyframes wave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@keyframes photoFade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
-
-.view-enter { animation: fadeUp .3s ease both; }
-/* Slide entre pestañas: sale una vista y entra la otra (260 ms, curva suave con ligera desaceleración) */
-@keyframes slideInNext { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
-@keyframes slideInPrev { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: none; } }
-@keyframes slideOutNext { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-32px); } }
-@keyframes slideOutPrev { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(32px); } }
-.slide-in-next { animation: slideInNext 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.slide-in-prev { animation: slideInPrev 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.slide-out-next { animation: slideOutNext 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.slide-out-prev { animation: slideOutPrev 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-html { overscroll-behavior-x: none; } /* sin el gesto "atrás" del navegador al deslizar horizontalmente */
-.photo-fade { animation: photoFade .3s ease both; }
-.toast-in { animation: toastIn .22s ease both; }
-
-/* Entrada escalonada de las tarjetas de cada zona */
-.stagger > * { animation: fadeUp .38s ease both; }
-.stagger > *:nth-child(2) { animation-delay: 70ms; }
-.stagger > *:nth-child(3) { animation-delay: 140ms; }
-.stagger > *:nth-child(4) { animation-delay: 210ms; }
-
-/* Interruptor de tema: sol/luna con rotación y escala */
-.theme-icon { transition: transform 420ms cubic-bezier(.4, 0, .2, 1), opacity 260ms ease; }
+/* Deslizador de gramos */
+.gramos { appearance: none; width: 100%; height: 2.75rem; background: transparent; cursor: pointer; }
+.gramos::-webkit-slider-runnable-track { height: .625rem; border-radius: 1rem; background: linear-gradient(to right, rgb(var(--food)) var(--p), rgb(var(--line) / .14) var(--p)); }
+.gramos::-moz-range-track { height: .625rem; border-radius: 1rem; background: linear-gradient(to right, rgb(var(--food)) var(--p), rgb(var(--line) / .14) var(--p)); }
+.gramos::-webkit-slider-thumb { appearance: none; width: 1.5rem; height: 1.5rem; margin-top: -.4375rem; border-radius: 50%; background: rgb(var(--food)); border: 4px solid rgb(var(--surface)); }
+.gramos::-moz-range-thumb { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: rgb(var(--food)); border: 4px solid rgb(var(--surface)); }
 
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
-  html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after { transition-duration: .01ms !important; }
 }

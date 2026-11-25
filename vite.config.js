@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'PetCare SmartStation',
         short_name: 'PetCare',
         lang: 'es',
-        theme_color: '#060913',
-        background_color: '#060913',
+        theme_color: '#0F171A',
+        background_color: '#0F171A',
         display: 'standalone',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
