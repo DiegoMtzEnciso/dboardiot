@@ -131,6 +131,11 @@ export function calcularNutricion(raza, etapa, actividad, kgPropio) {
   }
 }
 
+// Gramos servidos hoy desde la app (ración IA y manual). Se guardan por día en el navegador.
+const LS_SERVIDO = 'petcare-servido'
+const hoyClave = () => new Date().toDateString()
+const leerServido = () => { try { const v = JSON.parse(localStorage.getItem(LS_SERVIDO)); return v && v.dia ? v : { dia: hoyClave(), g: 0 } } catch { return { dia: hoyClave(), g: 0 } } }
+
 const discretizar = (v) => {
   const n = Number(v)
   if (!Number.isFinite(n) || n <= 0) return 0
@@ -191,6 +196,8 @@ export function usePetStation() {
   const [historial, setHistorial] = useState([])
   const client = useRef(null)
   const perfilRef = useRef(PERFIL0)
+  const [extra, setExtra] = useState(leerServido)
+  const [extraDemo, setExtraDemo] = useState(0)
   const pesosRef = useRef(leerPesos())
   // Peso vigente: el registrado por el usuario o, si no hay, el estimado por raza y etapa
   const kgDe = useCallback((p) => pesosRef.current[claveKg(p.raza, p.etapa)] ?? pesoEstimado(p.raza, p.etapa), [])
@@ -396,18 +403,30 @@ export function usePetStation() {
     log(`Dispensado automático IA ${auto ? 'activado' : 'desactivado'}`)
   }, [pub, post, log, kgDe])
 
+  const sumarServido = useCallback((g) => {
+    if (demoRef.current) { setExtraDemo((x) => x + g); return }
+    setExtra((prev) => {
+      const dia = hoyClave()
+      const next = { dia, g: (prev.dia === dia ? prev.g : 0) + g }
+      try { localStorage.setItem(LS_SERVIDO, JSON.stringify(next)) } catch { /* sin almacenamiento */ }
+      return next
+    })
+  }, [])
+
   const dispensarIA = useCallback(() => {
     pub(T.racion, 'IA')
     post({ accion: 'dispensar' })
+    sumarServido(Number(nutricionIA.gramos_por_toma) || 0)
     log(`Ración IA solicitada (${nutricionIA.gramos_por_toma} g)`)
-  }, [pub, post, log, nutricionIA.gramos_por_toma])
+  }, [pub, post, log, sumarServido, nutricionIA.gramos_por_toma])
 
   const dispensarManual = useCallback((gramos) => {
     const g = clamp(Number(gramos) || 5, 5, 85)
     pub(T.racion, JSON.stringify({ gramos: g }))
     post({ accion: 'dispensar', gramos: g })
+    sumarServido(g)
     log(`Ración manual solicitada: ${g} g`)
-  }, [pub, post, log])
+  }, [pub, post, log, sumarServido])
 
   const tararBascula = useCallback(() => {
     pub(T.tare, '1')
@@ -427,6 +446,7 @@ export function usePetStation() {
     demoRef.current = on
     setDemoState(on)
     if (on) {
+      setExtraDemo(0)
       setTelDemo(TEL0)
       // Historial inicial para que la gráfica se vea viva desde el primer instante
       const semilla = [38, 34, 29, 23, 18, 12, 9, 45, 40, 35, 29, 24]
@@ -469,14 +489,16 @@ export function usePetStation() {
     return () => clearInterval(id)
   }, [demo])
 
+  const extraHoy = demo ? extraDemo : (extra.dia === hoyClave() ? extra.g : 0)
+
   const vista = demo
     ? { telemetria: telDemo, historial: histDemo, activityFeed: feedDemo, isInitialLoading: false }
     : { telemetria, historial, activityFeed, isInitialLoading }
 
   return useMemo(() => ({
-    mqttOnline, perfil, nutricionIA, demo, setDemo, toast, ...vista,
+    mqttOnline, perfil, nutricionIA, demo, setDemo, toast, extraHoy, ...vista,
     cambiarPerfil, setPesoPropio, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [mqttOnline, perfil, nutricionIA, demo, setDemo, toast, vista.telemetria, vista.historial, vista.activityFeed, vista.isInitialLoading,
+  }), [mqttOnline, perfil, nutricionIA, demo, setDemo, toast, extraHoy, vista.telemetria, vista.historial, vista.activityFeed, vista.isInitialLoading,
     cambiarPerfil, setPesoPropio, setAuto, dispensarIA, dispensarManual, tararBascula, fijarHoraPrueba])
 }

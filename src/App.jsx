@@ -3,6 +3,10 @@ import { LayoutGrid, PawPrint, Activity } from 'lucide-react'
 import { usePetStation } from './hooks/usePetStation'
 import { Logo, ThemeToggle, Toast } from './components/Shell'
 import { useMedia, useSwipeTabs, useTheme } from './lib/hooks'
+import ResumenMascota from './components/bento/ResumenMascota'
+import ProximaToma from './components/bento/ProximaToma'
+import EstadoEstacion from './components/bento/EstadoEstacion'
+import ActividadReciente from './components/bento/ActividadReciente'
 import Hero from './components/bento/Hero'
 import Plan from './components/bento/Plan'
 import Dispensacion from './components/bento/Dispensacion'
@@ -12,12 +16,13 @@ import Bitacora from './components/bento/Bitacora'
 
 const SECCIONES = [
   { id: 'cuidado', label: 'Cuidado', icon: PawPrint },
+  { id: 'panel', label: 'Panel', icon: LayoutGrid },
   { id: 'datos', label: 'Datos', icon: Activity },
 ]
 
 // Bento de 12 columnas (en escritorio). Cada vista elige qué tarjetas muestra y cuánto ocupa cada una.
 const VISTAS = {
-  todo: [[Hero, 7], [Plan, 5], [Dispensacion, 5], [Sensores, 7], [Analitica, 7], [Bitacora, 5]],
+  panel: [[ResumenMascota, 7], [ProximaToma, 5], [EstadoEstacion, 7], [ActividadReciente, 5]],
   cuidado: [[Hero, 7], [Plan, 5], [Dispensacion, 12]],
   datos: [[Sensores, 12], [Analitica, 7], [Bitacora, 5]],
 }
@@ -28,10 +33,10 @@ export default function App() {
   const [theme, toggleTheme] = useTheme()
   const desktop = useMedia('(min-width: 1024px)')
   const tablet = useMedia('(min-width: 768px)')
-  // 'todo' = panel compuesto (solo escritorio); en tablet y móvil equivale a 'cuidado'
-  const [tab, setTab] = useState('todo')
-  const active = !desktop && tab === 'todo' ? 'cuidado' : tab
-  const tabs = desktop ? [{ id: 'todo', label: 'Panel', icon: LayoutGrid }, ...SECCIONES] : SECCIONES
+  // Orden de la presentación: Cuidado (configurar) → Panel (resumen) → Datos (telemetría). Siempre se abre en Cuidado.
+  const [tab, setTab] = useState('cuidado')
+  const active = tab
+  const tabs = SECCIONES
   const ids = tabs.map((t) => t.id)
   // Transición: la vista que sale (prev) y la que entra se deslizan en sentidos opuestos
   const [dir, setDir] = useState(0) // +1 = avanza (la nueva llega desde la derecha), -1 = retrocede
@@ -61,7 +66,7 @@ export default function App() {
     <main key={saliente ? `salida-${id}` : id} aria-hidden={saliente || undefined} inert={saliente}
       className={`${anim} mx-auto grid gap-5 px-4 pt-5 lg:grid-cols-12 lg:px-8 lg:pt-6 ${desktop ? 'max-w-[1440px]' : 'max-w-2xl'}`}>
       {VISTAS[id].map(([Card, span], i) => (
-        <div key={i} className={`flex min-w-0 ${SPAN[span]}`}><Card s={s} /></div>
+        <div key={i} className={`flex min-w-0 ${SPAN[span]}`}><Card s={s} go={go} /></div>
       ))}
     </main>
   )
@@ -72,7 +77,7 @@ export default function App() {
         {/* Capa de fondo: degradado + desenfoque que se desvanece hacia abajo (sin línea ni borde inferior) */}
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-canvas/95 via-canvas/85 to-canvas/0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,#000_72%,transparent)]" />
         <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 sm:gap-6 lg:px-8">
-          <button type="button" onClick={() => go(desktop ? 'todo' : 'cuidado')} className="flex items-center gap-3" aria-label="Inicio">
+          <button type="button" onClick={() => go('cuidado')} className="flex items-center gap-3" aria-label="Inicio">
             <Logo />
             <span className="font-display text-sm font-semibold leading-tight tracking-tight text-fg sm:text-base">PetCare <span className="font-medium text-muted md:hidden lg:inline">SmartStation</span></span>
           </button>
@@ -92,7 +97,7 @@ export default function App() {
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
         {!tablet && (
-          <nav className="mx-auto grid max-w-2xl grid-cols-2 gap-1 px-3 pb-2" aria-label="Secciones">
+          <nav className="mx-auto grid max-w-2xl grid-cols-3 gap-1 px-3 pb-2" aria-label="Secciones">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button key={id} type="button" onClick={() => go(id)} aria-current={active === id ? 'page' : undefined} className={`${tabCls(id)} min-h-11`}>
                 <Icon size={16} /> {label}
